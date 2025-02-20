@@ -36,7 +36,7 @@ watch(openedItemRef, () => {
                        :item="item"
                        :style="`height: ${widthDebounced / 5}px;`"
                        class="w-full transition-all"
-                       @click="openedItem = item.state == 'uploaded' ? item : null"/>
+                       @click="item.state == 'uploaded' ? (navigateTo('/image?id=' + item.id)) : null"/>
         </div>
 
         <div v-if="openedItem && items.find(item => item.id == openedItem?.id)"
