@@ -19,7 +19,6 @@ const imageKey   = ref<number>(1);
 watch(imageId, async (id) => {
     loading.value = true;
     imageKey.value++;
-    console.log(imageKey.value);
 
     previewSrc.value = '';
     imageSrc.value   = '';
@@ -29,6 +28,10 @@ watch(imageId, async (id) => {
     previewSrc.value = fileUrl(image.value?.data.preview_path ?? '');
     imageSrc.value   = fileUrl(image.value?.data.path ?? '');
 });
+
+function onLoad() {
+    setTimeout(() => loading.value = false, 10);
+}
 
 onMounted(async () => {
     loading.value = false;
@@ -45,7 +48,7 @@ onMounted(async () => {
             <div class="relative flex items-center justify-center w-full h-full overflow-clip">
                 <img :key="`image-${imageKey}`"
                      :src="imageSrc"
-                     @load="loading = false"
+                     @load="onLoad"
                      class="absolute max-h-dvh z-10 transition-all"
                      :class="{'opacity-0 scale-125': loading, 'opacity-100 scale-100': !loading}"/>
 
