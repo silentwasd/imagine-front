@@ -33,6 +33,29 @@ function onLoad() {
     setTimeout(() => loading.value = false, 10);
 }
 
+function prevImage() {
+    const index  = images.value?.data.findIndex(image => image.id == imageId.value) ?? 0;
+    const prevId = images.value?.data[index - 1]?.id ?? imageId.value;
+    navigateTo(`/image?id=${prevId}`);
+}
+
+function nextImage() {
+    const index  = images.value?.data.findIndex(image => image.id == imageId.value) ?? 0;
+    const nextId = images.value?.data[index + 1]?.id ?? imageId.value;
+    navigateTo(`/image?id=${nextId}`);
+}
+
+defineShortcuts({
+    arrowleft : {
+        usingInput: true,
+        handler   : () => prevImage()
+    },
+    arrowright: {
+        usingInput: true,
+        handler   : () => nextImage()
+    }
+});
+
 onMounted(async () => {
     loading.value = false;
 
@@ -64,6 +87,7 @@ onMounted(async () => {
 
         <ClientOnly>
             <ImageGrid class="grow w-0 overflow-auto h-dvh"
+                       :current-id="imageId"
                        :images="images?.data ?? []"/>
         </ClientOnly>
     </div>
