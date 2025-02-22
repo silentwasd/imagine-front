@@ -85,11 +85,9 @@ onMounted(async () => {
             </div>
         </div>
 
-        <ClientOnly>
-            <ImageGrid class="grow w-0 overflow-auto h-dvh"
-                       :current-id="imageId"
-                       :images="images?.data ?? []"/>
-        </ClientOnly>
+        <ImageGrid class="grow w-0 h-dvh"
+                   :current-id="imageId"
+                   :images="images?.data ?? []"/>
     </div>
 </template>
 

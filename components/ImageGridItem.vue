@@ -3,7 +3,12 @@ import type ImageResource from "~/resources/ImageResource";
 
 const props = defineProps<{
     image: ImageResource,
-    isActive: boolean
+    isActive: boolean,
+    loading: boolean
+}>();
+
+defineEmits<{
+    (e: 'ready'): void
 }>();
 
 const imageRef = ref();
@@ -22,12 +27,13 @@ onMounted(() => {
 </script>
 
 <template>
-    <NuxtLink class="w-full border-primary-500 transition-all duration-75"
+    <NuxtLink class="w-full border-primary-500 transition-all duration-75 relative"
               :class="{'border-8': isActive}"
               :to="`/image?id=${image.id}`">
         <img :src="fileUrl(image.preview_path)"
              ref="imageRef"
-             loading="lazy"/>
+             loading="lazy"
+             @load="$emit('ready')"/>
     </NuxtLink>
 </template>
 
