@@ -23,13 +23,13 @@ onMounted(() => {
 </script>
 
 <template>
-    <NuxtLink class="w-full border-primary-500 transition-all duration-75 relative"
-              :class="{'border-8': isActive}"
+    <NuxtLink class="w-full border-primary-500 transition-all duration-75 relative group"
               :to="`/image?id=${image.id}&tags=${tags.join(',')}`">
         <img :src="fileUrl(image.preview_path)"
              ref="imageRef"
              loading="lazy"
-             class="pointer-events-none"/>
+             class="pointer-events-none group-hover:rotate-3 transition-transform"
+             :class="{'brightness-50': isActive}"/>
     </NuxtLink>
 </template>
 
