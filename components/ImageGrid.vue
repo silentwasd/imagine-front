@@ -3,22 +3,17 @@ import type ImageResource from "~/resources/ImageResource";
 
 const props = defineProps<{
     images: ImageResource[],
-    currentId: number
+    currentId?: number
 }>();
-
-const readyCount = ref<number>(0);
-const loading = computed<boolean>(() => props.images.length == 0 || readyCount.value < props.images.length);
 </script>
 
 <template>
-    <div class="relative flex justify-center items-start overflow-auto p-2 transition-opacity"
-         :class="{'opacity-0': loading, 'opacity-100': !loading}">
-        <div class="grid grid-cols-4 gap-2">
+    <div class="relative flex justify-center items-start overflow-auto p-2 transition-opacity">
+        <div class="grid gap-2"
+             :class="{'grid-cols-4': currentId, 'grid-cols-8': !currentId}">
             <ImageGridItem v-for="image in images"
                            :image="image"
-                           :is-active="currentId == image.id"
-                           :loading="readyCount < images.length"
-                           @ready="readyCount++"/>
+                           :is-active="currentId == image.id"/>
         </div>
     </div>
 </template>

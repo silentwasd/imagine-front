@@ -3,12 +3,7 @@ import type ImageResource from "~/resources/ImageResource";
 
 const props = defineProps<{
     image: ImageResource,
-    isActive: boolean,
-    loading: boolean
-}>();
-
-defineEmits<{
-    (e: 'ready'): void
+    isActive: boolean
 }>();
 
 const imageRef = ref();
@@ -17,7 +12,7 @@ watch(() => props.isActive, (value) => {
     if (!value)
         return;
 
-    imageRef.value.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+    useTimeoutFn(() => imageRef.value.scrollIntoView({behavior: 'smooth', block: 'nearest'}), 100);
 });
 
 onMounted(() => {
@@ -33,7 +28,7 @@ onMounted(() => {
         <img :src="fileUrl(image.preview_path)"
              ref="imageRef"
              loading="lazy"
-             @load="$emit('ready')"/>
+             class="pointer-events-none"/>
     </NuxtLink>
 </template>
 
