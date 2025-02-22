@@ -7,16 +7,15 @@ const route   = useRoute();
 const imageId = computed<number | undefined>(() => route.query.id ? parseInt(route.query.id as string) : undefined);
 const tags    = computed<number[]>(() => route.query.tags ? (route.query.tags as string).split(',').map(tag => parseInt(tag)) : []);
 
-let firstImageId = imageId.value ? parseInt(imageId.value.toString()) : undefined;
+let firstImageId = useState(() => imageId.value ? parseInt(imageId.value.toString()) : undefined);
 
 watch(tags, (value, oldValue) => {
     if (value && oldValue && value.length != oldValue.length)
-        firstImageId = imageId.value ? parseInt(imageId.value.toString()) : undefined;
+        firstImageId.value = imageId.value ? parseInt(imageId.value.toString()) : undefined;
 });
 
 const imageRepo = new ImageRepository();
 
-const seed   = useCookie<string | undefined>('seed');
 const mature = useCookie<boolean>('mature', {default: () => false});
 
 const pages          = ref<number[]>([1]);
@@ -30,8 +29,8 @@ async function loadNextPage() {
     try {
         const collection = await imageRepo.fetchList({
             tags: tags.value,
-            seed: seed.value,
-            page: lastLoadedPage.value + 1
+            page: lastLoadedPage.value + 1,
+            ...firstImageId.value ? {exclude_image_id: firstImageId.value} : {}
         });
 
         images.value?.data.push(...collection.data);
@@ -43,8 +42,7 @@ async function loadNextPage() {
 
 const {data: images} = await imageRepo.lazyList<PaginatedCollection<ImageResource>>(() => ({
     tags: tags.value,
-    ...seed.value ? {seed: seed.value} : {},
-    ...firstImageId ? {image_id: firstImageId} : {},
+    ...firstImageId.value ? {image_id: firstImageId.value} : {},
     ...mature.value ? {mature: mature.value ? 1 : 0} : {}
 }));
 
@@ -88,10 +86,6 @@ defineShortcuts({
         usingInput: true,
         handler   : () => nextImage(4)
     }
-});
-
-onMounted(() => {
-    seed.value = images.value?.seed.toString();
 });
 </script>
 
