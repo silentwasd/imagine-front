@@ -1,96 +1,74 @@
 <script setup lang="ts">
 import ImageRepository from "~/repositories/ImageRepository";
-import type TagResource from "~/resources/TagResource";
-import type ImageResource from "~/resources/ImageResource";
 import type PaginatedCollection from "~/types/api/PaginatedCollection";
+import type ImageResource from "~/resources/ImageResource";
 
-const tags = ref<TagResource[]>([]);
+const route   = useRoute();
+const imageId = computed<number | undefined>(() => route.query.id ? parseInt(route.query.id as string) : undefined);
+const tags    = computed<number[]>(() => route.query.tags ? (route.query.tags as string).split(',').map(tag => parseInt(tag)) : []);
 
-const imageRepo      = new ImageRepository();
-const {data: images} = await imageRepo.lazyList<PaginatedCollection<ImageResource>>(() => ({
-    tags: tags.value.map(tag => tag.id)
-}));
+let firstImageId = imageId.value ? parseInt(imageId.value.toString()) : undefined;
 
-const page      = ref<number>(1);
-const nextId    = ref<number>(0);
-const newImages = ref<any[]>([]);
-
-watch(images, () => {
-    newImages.value = [];
-    page.value      = 1;
+watch(tags, (value, oldValue) => {
+    if (value && oldValue && value.length != oldValue.length)
+        firstImageId = imageId.value ? parseInt(imageId.value.toString()) : undefined;
 });
 
-const items = computed<any[]>(() => [
-    ...newImages.value,
-    ...(images.value?.data ?? []).map(item => ({
-        id          : item.id,
-        innerId     : ++nextId.value,
-        state       : 'uploaded',
-        path        : item.path,
-        preview_path: item.preview_path,
-        created_at  : item.created_at,
-        tags        : item.tags
-    }))
-]);
+const imageRepo = new ImageRepository();
 
-const sortedItems = computed(() => items.value.sort((a, b) => a.state == 'uploading' && b.state != 'uploading' ? -1 : 1));
-const openedItem  = ref<any | null>(null);
+const seed   = useCookie<string | undefined>('seed');
+const mature = useCookie<boolean>('mature', {default: () => false});
 
-const inputRef = ref<HTMLInputElement>();
+const pages          = ref<number[]>([1]);
+const lastLoadedPage = computed<number>(() => pages.value.toSorted((a, b) => b - a)[0]);
 
-function input() {
-    newImages.value.unshift(
-        ...([...inputRef.value?.files ?? []]).map((file: File) => ({
-            innerId: -(++nextId.value),
-            state  : 'upload-queue',
-            file
-        }))
-    );
-}
+const loadingNextPage = ref<boolean>(false);
 
-const loadingMore = ref<boolean>(false);
-
-async function loadMore() {
-    loadingMore.value = true;
+async function loadNextPage() {
+    loadingNextPage.value = true;
 
     try {
-        images.value?.data.push(...(await imageRepo.fetchList({
-            tags: tags.value.map(tag => tag.id),
-            page: ++page.value
-        })).data);
+        const collection = await imageRepo.fetchList({
+            tags: tags.value,
+            seed: seed.value,
+            page: lastLoadedPage.value + 1
+        });
+
+        images.value?.data.push(...collection.data);
+        pages.value.push(lastLoadedPage.value + 1);
     } finally {
-        loadingMore.value = false;
+        loadingNextPage.value = false;
     }
 }
 
-watch(newImages, (_items) => {
-    if (_items.find(item => item.state == 'failed'))
-        newImages.value = _items.filter(item => item.state != 'failed');
+const {data: images} = await imageRepo.lazyList<PaginatedCollection<ImageResource>>(() => ({
+    tags: tags.value,
+    ...seed.value ? {seed: seed.value} : {},
+    ...firstImageId ? {image_id: firstImageId} : {},
+    ...mature.value ? {mature: mature.value ? 1 : 0} : {}
+}));
 
-    if (_items.find(item => item.state == 'uploading'))
+const tagObjects = computed(() => {
+    const flat = images.value?.data.map(image => image.tags).flat() ?? [];
+    return tags.value.map(id => flat.find(tag => tag.id == id));
+});
+
+function prevImage(count: number = 1) {
+    if (!imageId.value)
         return;
 
-    _items.filter(item => item.state == 'upload-queue')
-        .slice(0, 5)
-        .forEach(item => {
-            item.state = 'uploading';
-        });
-}, {deep: true});
-
-function prevImage() {
-    if (!openedItem.value)
-        return;
-
-    const uploaded   = sortedItems.value.filter(item => item.state == 'uploaded');
-    openedItem.value = uploaded[Math.max(0, uploaded.findIndex(item => item.id == openedItem.value?.id) - 1)];
+    const index  = images.value?.data.findIndex(image => image.id == imageId.value) ?? 0;
+    const prevId = images.value?.data[index - count]?.id ?? imageId.value;
+    navigateTo(`/?id=${prevId}&tags=${tags.value.join(',')}`);
 }
 
-function nextImage() {
-    if (!openedItem.value)
+function nextImage(count: number = 1) {
+    if (!imageId.value)
         return;
 
-    const uploaded   = sortedItems.value.filter(item => item.state == 'uploaded');
-    openedItem.value = uploaded[Math.min(uploaded.length - 1, uploaded.findIndex(item => item.id == openedItem.value?.id) + 1)];
+    const index  = images.value?.data.findIndex(image => image.id == imageId.value) ?? 0;
+    const nextId = images.value?.data[index + count]?.id ?? imageId.value;
+    navigateTo(`/?id=${nextId}&tags=${tags.value.join(',')}`);
 }
 
 defineShortcuts({
@@ -101,51 +79,66 @@ defineShortcuts({
     arrowright: {
         usingInput: true,
         handler   : () => nextImage()
+    },
+    arrowup   : {
+        usingInput: true,
+        handler   : () => prevImage(4)
+    },
+    arrowdown : {
+        usingInput: true,
+        handler   : () => nextImage(4)
     }
+});
+
+onMounted(() => {
+    seed.value = images.value?.seed.toString();
 });
 </script>
 
 <template>
-    <UContainer class="flex flex-col gap-5 py-10">
-        <input ref="inputRef"
-               type="file"
-               class="hidden"
-               multiple
-               @input="input"/>
+    <div class="flex select-none">
+        <ImagePanel v-if="imageId"
+                    :image-id="imageId"
+                    :images="images?.data ?? []"
+                    :tags="tags"/>
 
-        <div class="flex justify-center">
-            <UButton label="Загрузить картинки"
-                     icon="i-heroicons-arrow-up-tray"
-                     size="xl"
-                     @click="inputRef?.click()"/>
-        </div>
+        <div class="flex flex-col grow w-0 h-dvh">
+            <div v-if="tags.length > 0"
+                 class="flex flex-wrap gap-2.5 shrink-0 p-2.5 border-b dark:border-gray-700">
+                <NuxtLink v-for="tag in tagObjects"
+                          class="leading-5"
+                          :class="{'text-primary-400': tags.find(id => id == tag.id)}"
+                          :to="imageId ? `/?id=${imageId}&tags=${tags.filter(id => id != tag.id).join(',')}` : `/?tags=${tags.filter(id => id != tag.id).join(',')}`">
+                    #{{ tag.name }}
+                </NuxtLink>
 
-        <div v-if="tags.length > 0" class="flex flex-wrap">
-            <TagButton v-for="tag in tags"
-                       :key="tag.id"
-                       :tag="tag"
-                       v-model="tags"/>
-        </div>
+                <NuxtLink v-if="!mature"
+                          class="leading-5 cursor-pointer hover:text-primary-400"
+                          @click="mature = true">
+                    #not_mature
+                </NuxtLink>
+            </div>
 
-        <div class="flex flex-col relative select-none">
-            <ImageRow v-for="n in Math.ceil(items.length / 5)"
-                      :items="sortedItems.slice((n - 1) * 5, n * 5)"
-                      v-model="openedItem"
-                      v-model:tags="tags"
-                      @prev-image="prevImage"
-                      @next-image="nextImage"/>
-        </div>
+            <div class="grow overflow-auto h-0">
+                <ImageGrid :current-id="imageId"
+                           :images="images?.data ?? []"
+                           :tags="tags"/>
 
-        <div class="flex justify-center">
-            <UButton label="Загрузить еще"
-                     color="gray"
-                     icon="i-heroicons-arrow-down"
-                     size="xl"
-                     :loading="loadingMore"
-                     @click="loadMore"/>
+                <div v-if="lastLoadedPage < (images?.meta.last_page ?? 1)"
+                     class="shrink-0 px-2 pb-2">
+                    <UButton label="Загрузить еще"
+                             size="xl"
+                             icon="i-heroicons-arrow-down-solid"
+                             class="w-full justify-center"
+                             :ui="{rounded: 'rounded-none'}"
+                             :loading="loadingNextPage"
+                             @click="loadNextPage"/>
+                </div>
+            </div>
         </div>
-    </UContainer>
+    </div>
 </template>
 
 <style scoped>
+
 </style>

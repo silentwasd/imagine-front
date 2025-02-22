@@ -66,7 +66,7 @@ onMounted(() => {
                              size="xl"
                              class="drop-shadow [&>span]:w-10 [&>span]:h-10"
                              :padded="false"
-                             @click="navigateTo(`/image?tags=${tags.join(',')}`)"/>
+                             @click="navigateTo(`/?tags=${tags.join(',')}`)"/>
                 </div>
 
                 <div
@@ -76,7 +76,7 @@ onMounted(() => {
                                   class="leading-5 hover:text-primary-400"
                                   :class="{'text-primary-400': tags.find(id => id == tag.id)}"
                                   :key="tag.id"
-                                  :to="tags.find(id => id == tag.id) ? `/image?id=${imageId}&tags=${tags.filter(id => id != tag.id).join(',')}` : `/image?id=${imageId}&tags=${[...tags, tag.id].join(',')}`">
+                                  :to="tags.find(id => id == tag.id) ? `/?id=${imageId}&tags=${tags.filter(id => id != tag.id).join(',')}` : `/?id=${imageId}&tags=${[...tags, tag.id].join(',')}`">
                             #{{ tag.name }}
                         </NuxtLink>
                     </div>

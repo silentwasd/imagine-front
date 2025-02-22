@@ -24,7 +24,7 @@ onMounted(() => {
 
 <template>
     <NuxtLink class="w-full border-primary-500 transition-all duration-75 relative group"
-              :to="`/image?id=${image.id}&tags=${tags.join(',')}`">
+              :to="`/?id=${image.id}&tags=${tags.join(',')}`">
         <img :src="fileUrl(image.preview_path)"
              ref="imageRef"
              loading="lazy"
