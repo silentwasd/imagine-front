@@ -7,10 +7,38 @@ const route   = useRoute();
 const imageId = computed<number | undefined>(() => route.query.id ? parseInt(route.query.id as string) : undefined);
 const tags    = computed<number[]>(() => route.query.tags ? (route.query.tags as string).split(',').map(tag => parseInt(tag)) : []);
 
+const firstImageId = imageId.value ? parseInt(imageId.value.toString()) : undefined;
+
 const imageRepo = new ImageRepository();
 
+const seed = useCookie<string | undefined>('seed');
+
+const pages          = ref<number[]>([1]);
+const lastLoadedPage = computed<number>(() => pages.value.toSorted((a, b) => b - a)[0]);
+
+const loadingNextPage = ref<boolean>(false);
+
+async function loadNextPage() {
+    loadingNextPage.value = true;
+
+    try {
+        const collection = await imageRepo.fetchList({
+            tags: tags.value,
+            seed: seed.value,
+            page: lastLoadedPage.value + 1
+        });
+
+        images.value?.data.push(...collection.data);
+        pages.value.push(lastLoadedPage.value + 1);
+    } finally {
+        loadingNextPage.value = false;
+    }
+}
+
 const {data: images} = await imageRepo.lazyList<PaginatedCollection<ImageResource>>(() => ({
-    tags: tags.value
+    tags: tags.value,
+    ...seed.value ? {seed: seed.value} : {},
+    ...firstImageId ? {image_id: firstImageId} : {}
 }));
 
 const tagObjects = computed(() => {
@@ -54,6 +82,10 @@ defineShortcuts({
         handler   : () => nextImage(4)
     }
 });
+
+onMounted(() => {
+    seed.value = images.value?.seed.toString();
+});
 </script>
 
 <template>
@@ -74,10 +106,22 @@ defineShortcuts({
                 </NuxtLink>
             </div>
 
-            <ImageGrid class="grow h-0"
-                       :current-id="imageId"
-                       :images="images?.data ?? []"
-                       :tags="tags"/>
+            <div class="grow overflow-auto h-0">
+                <ImageGrid :current-id="imageId"
+                           :images="images?.data ?? []"
+                           :tags="tags"/>
+
+                <div v-if="lastLoadedPage < (images?.meta.last_page ?? 1)"
+                     class="shrink-0 px-2 pb-2.5">
+                    <UButton label="Загрузить еще"
+                             size="xl"
+                             icon="i-heroicons-arrow-down-solid"
+                             class="w-full justify-center"
+                             :ui="{rounded: 'rounded-none'}"
+                             :loading="loadingNextPage"
+                             @click="loadNextPage"/>
+                </div>
+            </div>
         </div>
     </div>
 </template>
