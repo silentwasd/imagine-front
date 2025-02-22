@@ -4,11 +4,12 @@ import type ImageResource from "~/resources/ImageResource";
 
 const props = defineProps<{
     imageId: number,
-    images: ImageResource[]
+    images: ImageResource[],
+    tags: number[]
 }>();
 
 const imageRepo = new ImageRepository();
-const image = ref<ImageResource>();
+const image     = ref<ImageResource>();
 
 const previewSrc = ref<string>(fileUrl(image.value?.preview_path ?? ''));
 const imageSrc   = ref<string>(fileUrl(image.value?.path ?? ''));
@@ -65,16 +66,17 @@ onMounted(() => {
                              size="xl"
                              class="drop-shadow [&>span]:w-10 [&>span]:h-10"
                              :padded="false"
-                             @click="navigateTo('/image')"/>
+                             @click="navigateTo(`/image?tags=${tags.join(',')}`)"/>
                 </div>
 
                 <div
                     class="absolute bottom-0 w-full p-2.5 bg-gradient-to-t bg-gray-900/90 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div class="flex flex-wrap gap-x-1.5 drop-shadow">
                         <NuxtLink v-for="tag in image.tags"
-                                  :key="tag.id"
                                   class="leading-5 hover:text-primary-400"
-                                  to="#">
+                                  :class="{'text-primary-400': tags.find(id => id == tag.id)}"
+                                  :key="tag.id"
+                                  :to="tags.find(id => id == tag.id) ? `/image?id=${imageId}&tags=${tags.filter(id => id != tag.id).join(',')}` : `/image?id=${imageId}&tags=${[...tags, tag.id].join(',')}`">
                             #{{ tag.name }}
                         </NuxtLink>
                     </div>

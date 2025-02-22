@@ -3,7 +3,8 @@ import type ImageResource from "~/resources/ImageResource";
 
 const props = defineProps<{
     image: ImageResource,
-    isActive: boolean
+    isActive: boolean,
+    tags: number[]
 }>();
 
 const imageRef = ref();
@@ -24,7 +25,7 @@ onMounted(() => {
 <template>
     <NuxtLink class="w-full border-primary-500 transition-all duration-75 relative"
               :class="{'border-8': isActive}"
-              :to="`/image?id=${image.id}`">
+              :to="`/image?id=${image.id}&tags=${tags.join(',')}`">
         <img :src="fileUrl(image.preview_path)"
              ref="imageRef"
              loading="lazy"

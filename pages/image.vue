@@ -5,10 +5,18 @@ import type ImageResource from "~/resources/ImageResource";
 
 const route   = useRoute();
 const imageId = computed<number | undefined>(() => route.query.id ? parseInt(route.query.id as string) : undefined);
+const tags    = computed<number[]>(() => route.query.tags ? (route.query.tags as string).split(',').map(tag => parseInt(tag)) : []);
 
 const imageRepo = new ImageRepository();
 
-const {data: images} = await imageRepo.list<PaginatedCollection<ImageResource>>('images');
+const {data: images} = await imageRepo.lazyList<PaginatedCollection<ImageResource>>(() => ({
+    tags: tags.value
+}));
+
+const tagObjects = computed(() => {
+    const flat = images.value?.data.map(image => image.tags).flat() ?? [];
+    return tags.value.map(id => flat.find(tag => tag.id == id));
+});
 
 function prevImage(count: number = 1) {
     if (!imageId.value)
@@ -52,11 +60,25 @@ defineShortcuts({
     <div class="flex select-none">
         <ImagePanel v-if="imageId"
                     :image-id="imageId"
-                    :images="images?.data ?? []"/>
+                    :images="images?.data ?? []"
+                    :tags="tags"/>
 
-        <ImageGrid class="grow w-0 h-dvh"
-                   :current-id="imageId"
-                   :images="images?.data ?? []"/>
+        <div class="flex flex-col grow w-0 h-dvh">
+            <div v-if="tags.length > 0"
+                 class="flex flex-wrap gap-2.5 shrink-0 p-2.5 border-b dark:border-gray-700">
+                <NuxtLink v-for="tag in tagObjects"
+                          class="leading-5"
+                          :class="{'text-primary-400': tags.find(id => id == tag.id)}"
+                          :to="imageId ? `/image?id=${imageId}&tags=${tags.filter(id => id != tag.id).join(',')}` : `/image?tags=${tags.filter(id => id != tag.id).join(',')}`">
+                    #{{ tag.name }}
+                </NuxtLink>
+            </div>
+
+            <ImageGrid class="grow h-0"
+                       :current-id="imageId"
+                       :images="images?.data ?? []"
+                       :tags="tags"/>
+        </div>
     </div>
 </template>
 

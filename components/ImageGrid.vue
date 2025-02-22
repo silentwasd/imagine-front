@@ -3,7 +3,8 @@ import type ImageResource from "~/resources/ImageResource";
 
 const props = defineProps<{
     images: ImageResource[],
-    currentId?: number
+    currentId?: number,
+    tags: number[]
 }>();
 </script>
 
@@ -13,6 +14,7 @@ const props = defineProps<{
              :class="{'grid-cols-4': currentId, 'grid-cols-8': !currentId}">
             <ImageGridItem v-for="image in images"
                            :image="image"
+                           :tags="tags"
                            :is-active="currentId == image.id"/>
         </div>
     </div>
