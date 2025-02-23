@@ -30,7 +30,8 @@ async function loadNextPage() {
         const collection = await imageRepo.fetchList({
             tags: tags.value,
             page: lastLoadedPage.value + 1,
-            ...firstImageId.value ? {exclude_image_id: firstImageId.value} : {}
+            ...firstImageId.value ? {exclude_image_id: firstImageId.value} : {},
+            ...mature.value ? {mature: mature.value ? 1 : 0} : {}
         });
 
         images.value?.data.push(...collection.data);
