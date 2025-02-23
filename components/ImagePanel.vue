@@ -81,7 +81,7 @@ onMounted(() => {
                                  size="xl"
                                  class="drop-shadow [&>span]:w-8 [&>span]:h-8"
                                  :padded="false"
-                                 @click="copy(image.tags.map(tag => '#' + tag.name).join(', '))"/>
+                                 @click="copy(image.tags.map(tag => tag.name).join(', '))"/>
                     </UTooltip>
 
                     <UButton color="white"
