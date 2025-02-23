@@ -33,6 +33,20 @@ function onLoad() {
     setTimeout(() => loading.value = false, 10);
 }
 
+const {copy, copied} = useClipboard();
+const toast = useToast();
+
+watch(copied, value => {
+    if (!value)
+        return;
+
+    toast.add({
+        title: 'Успех',
+        description: 'Теги успешно скопированы',
+        icon: 'i-heroicons-check'
+    });
+});
+
 onMounted(() => {
     loading.value = false;
 });
@@ -59,7 +73,17 @@ onMounted(() => {
 
             <div class="absolute w-full h-full top-0 z-10">
                 <div
-                    class="flex items-center justify-end p-2.5 bg-gradient-to-b from-gray-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                    class="flex items-center justify-end gap-2.5 p-2.5 bg-gradient-to-b from-gray-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                    <UTooltip text="Скопировать теги">
+                        <UButton color="white"
+                                 variant="link"
+                                 icon="i-heroicons-tag-16-solid"
+                                 size="xl"
+                                 class="drop-shadow [&>span]:w-8 [&>span]:h-8"
+                                 :padded="false"
+                                 @click="copy(image.tags.map(tag => '#' + tag.name).join(', '))"/>
+                    </UTooltip>
+
                     <UButton color="white"
                              variant="link"
                              icon="i-heroicons-x-mark"
