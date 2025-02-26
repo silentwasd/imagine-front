@@ -34,16 +34,18 @@ function onLoad() {
 }
 
 const {copy, copied} = useClipboard();
-const toast = useToast();
+const toast          = useToast();
+
+const colorMode = useColorMode();
 
 watch(copied, value => {
     if (!value)
         return;
 
     toast.add({
-        title: 'Успех',
+        title      : 'Успех',
         description: 'Теги успешно скопированы',
-        icon: 'i-heroicons-check'
+        icon       : 'i-heroicons-check'
     });
 });
 
@@ -74,12 +76,22 @@ onMounted(() => {
             <div class="absolute w-full h-full top-0 z-10">
                 <div
                     class="flex items-center justify-end gap-2.5 p-2.5 bg-gradient-to-b from-gray-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ClientOnly>
+                        <UButton color="white"
+                                 variant="link"
+                                 :icon="colorMode.value == 'light' ? 'i-heroicons-sun-16-solid' : 'i-heroicons-moon-16-solid'"
+                                 size="xl"
+                                 class="text-white drop-shadow [&>span]:w-8 [&>span]:h-8"
+                                 :padded="false"
+                                 @click="colorMode.preference = colorMode.value == 'light' ? 'dark' : 'light'"/>
+                    </ClientOnly>
+
                     <UTooltip text="Скопировать теги">
                         <UButton color="white"
                                  variant="link"
                                  icon="i-heroicons-tag-16-solid"
                                  size="xl"
-                                 class="drop-shadow [&>span]:w-8 [&>span]:h-8"
+                                 class="text-white drop-shadow [&>span]:w-8 [&>span]:h-8"
                                  :padded="false"
                                  @click="copy(image.tags.map(tag => tag.name).join(', '))"/>
                     </UTooltip>
@@ -88,16 +100,16 @@ onMounted(() => {
                              variant="link"
                              icon="i-heroicons-x-mark"
                              size="xl"
-                             class="drop-shadow [&>span]:w-10 [&>span]:h-10"
+                             class="text-white drop-shadow [&>span]:w-10 [&>span]:h-10"
                              :padded="false"
                              @click="navigateTo(`/?tags=${tags.join(',')}`)"/>
                 </div>
 
                 <div
-                    class="absolute bottom-0 w-full p-2.5 bg-gradient-to-t bg-gray-900/90 opacity-0 group-hover:opacity-100 transition-opacity">
+                    class="absolute bottom-0 w-full p-2.5 bg-gradient-to-t bg-gray-600/90 dark:bg-gray-900/90 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div class="flex flex-wrap gap-x-1.5 drop-shadow">
                         <NuxtLink v-for="tag in image.tags"
-                                  class="leading-5 hover:text-primary-400"
+                                  class="leading-5 text-gray-50 hover:text-primary-400"
                                   :class="{'text-primary-400': tags.find(id => id == tag.id)}"
                                   :key="tag.id"
                                   :to="tags.find(id => id == tag.id) ? `/?id=${imageId}&tags=${tags.filter(id => id != tag.id).join(',')}` : `/?id=${imageId}&tags=${[...tags, tag.id].join(',')}`">
